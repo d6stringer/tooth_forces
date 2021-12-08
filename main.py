@@ -9,6 +9,8 @@ path = 'C:/Users/dwoodson/PycharmProjects/tooth_forces/'
 data_from_file = pd.read_excel("data-1.xlsx")
 data = data_from_file.values.tolist()
 
+data2_from_file = pd.read_excel("data-1.xlsx")
+data2 = data2_from_file.values.tolist()
 
 def rotate(vector, angle):
     """
@@ -36,7 +38,7 @@ def buccal_adjust_vectors(list_a, list_b):
         vectors.append(rotate(np.array([[list_a[i]], [list_b[i]]]), tooth_angles[i]))
     return vectors
 
-def plot_vectors(vectors, color, title):
+def plot_vectors(vectors, color, ax):
     """
     Plots a list of numpy vectors as quivers (arrows).
     Keyword arguments:
@@ -44,25 +46,27 @@ def plot_vectors(vectors, color, title):
     color -- any base or CSS color
     title -- title of the graph
     """
-    img = plt.imread("teef.png")
-    fig, ax = plt.subplots()
-    ax.imshow(img)
-    ax.set_title(title)
-    ax.axis('off')
     vector_scale = 0.06  # smaller is bigger, of course
     vector_units = 'xy'  # see quiver docs
-
     for i in range(len(vectors)):
         ax.quiver(teeth_x_locations[i], teeth_y_location[i], vectors[i][0], vectors[i][1], color=color,
                   scale=vector_scale, units=vector_units)
     return None
 
-def make_gif(data_a, data_b):
+def make_plots(data_a, data_b, data_c):
     filenames = []
-    for i in range(len(data)):
+
+    for i in range(len(data_b)):
+        img = plt.imread("teef.png")
+        fig, ax = plt.subplots()
+        ax.imshow(img)
+        ax.set_title(i)
+        ax.axis('off')
 
         vectors = buccal_adjust_vectors(data_a, data_b[i]) #to make composite vectors you'll have to change "data_a" here, for zeros or ones you can't use indexing.
-        plot_vectors(vectors, 'r', i)
+        vectors2 = buccal_adjust_vectors(data_c[i], data_a)
+        plot_vectors(vectors, 'r', ax)
+        plot_vectors(vectors2, 'g', ax)
 
         filename = f'plot{i}.png'
         plt.savefig(filename)
@@ -70,7 +74,9 @@ def make_gif(data_a, data_b):
         for i in range(2):
             filenames.append(filename)
         plt.close()
+    return filenames
 
+def make_gif(filenames):
     for k in range(3):
         filenames.append(filenames[-1])
 
@@ -78,7 +84,9 @@ def make_gif(data_a, data_b):
         for filename in filenames:
             image = imageio.imread(filename)
             writer.append_data(image)
+    return None
 
+def delete_files(filenames):
     for filename in filenames:
         if filename in filenames:
             os.remove(filename)
@@ -104,13 +112,15 @@ y_forces=[0.035842987,0.073104122,0.074166366,0.014452806,0.029474532,0.00145510
 m_x = [1.318218459,-6.383277892,-2.204456464,0.563085942,1.251697703,-1.045772825,12.05529395,15.70611027,0.159313544,5.658746342,-2.605700592,0.054121096,-1.76405143,1.342880227]
 
 
-# These just calculate and plot unit vectors adjusted, uncomment to use
+#These just calculate and plot unit vectors adjusted, uncomment to use
 # x_vectors = buccal_adjust_vectors(ones, zeros)
 # y_vectors = buccal_adjust_vectors(zeros, ones)
-# plot_vectors(x_vectors, 'peachpuff')
-# plot_vectors(y_vectors, 'chartreuse')
+# plot_vectors(x_vectors, 'peachpuff', 'fun')
+# plot_vectors(y_vectors, 'chartreuse', '')
 # plt.show()
 
 if __name__ == "__main__":
-    make_gif(zeros, data)
+    files = make_plots(zeros, data, data2)
+    make_gif(files)
+    delete_files(files)
 
