@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
+from PIL import Image
 
 path = 'C:/Users/dwoodson/PycharmProjects/tooth_forces/'
 # Get data from excel file
@@ -38,9 +39,9 @@ def buccal_adjust_vectors(list_a, list_b):
         vectors.append(rotate(np.array([[list_a[i]], [list_b[i]]]), tooth_angles[i]))
     return vectors
 
-def plot_vectors(vectors, color, ax):
+def generate_vectors(vectors, color, ax):
     """
-    Plots a list of numpy vectors as quivers (arrows).
+    Makes a list of numpy vectors as quivers (arrows).
     Keyword arguments:
     vectors -- list of 2D numpy vectors you want to plot
     color -- any base or CSS color
@@ -49,24 +50,32 @@ def plot_vectors(vectors, color, ax):
     vector_scale = 0.06  # smaller is bigger, of course
     vector_units = 'xy'  # see quiver docs
     for i in range(len(vectors)):
-        ax.quiver(teeth_x_locations[i], teeth_y_location[i], vectors[i][0], vectors[i][1], color=color,
+        ax.quiver(new_teeth_x_locations[i], new_teeth_y_locations[i], vectors[i][0], vectors[i][1], color=color,
                   scale=vector_scale, units=vector_units)
     return None
 
 def make_plots(data_a, data_b, data_c):
+    """
+    This generates a single plot of the data
+    data_a -- typically a list of zeros but can also be used for combining vectors
+    data_b -- a list of vectors
+    data_c -- a list of vectors
+    :return: returns a list of the file names so you can generate a gif or delete them later.
+    """
     filenames = []
 
     for i in range(len(data_b)):
-        img = plt.imread("teef.png")
-        fig, ax = plt.subplots()
-        ax.imshow(img)
-        ax.set_title(i)
-        ax.axis('off')
+        img = plt.imread("new_teef.png") #define image background
+        fig, ax = plt.subplots() #creation of subplots
+        ax.imshow(img) #show the background image
+        ax.set_title(i) #set graph title
+        ax.axis('off') #remove axis
 
+        #add each set of vectors you want to add to the plot with one buccal adjust and one generate_vectors:
         vectors = buccal_adjust_vectors(data_a, data_b[i]) #to make composite vectors you'll have to change "data_a" here, for zeros or ones you can't use indexing.
         vectors2 = buccal_adjust_vectors(data_c[i], data_a)
-        plot_vectors(vectors, 'r', ax)
-        plot_vectors(vectors2, 'g', ax)
+        generate_vectors(vectors, 'r', ax) #this was changed from sending the title, to sending the plot
+        generate_vectors(vectors2, 'g', ax)
 
         filename = f'plot{i}.png'
         plt.savefig(filename)
@@ -77,6 +86,11 @@ def make_plots(data_a, data_b, data_c):
     return filenames
 
 def make_gif(filenames):
+    """
+    Generates a gif from a list of filenames.
+    :param filenames: a list of file names
+    """
+
     for k in range(3):
         filenames.append(filenames[-1])
 
@@ -93,13 +107,34 @@ def delete_files(filenames):
             filenames = list(filter((filename).__ne__, filenames))
     return None
 
+def pad_image():
+    img = Image.open('teef.png')
+    right = 500
+    left = 500
+    top = 500
+    bottom = 0
+    width, height = img.size
+    new_width = width + left + right
+    new_height = height + top + bottom
+    new_image = Image.new(img.mode, (new_width, new_height), (0,0,0,0))
+    new_image.paste(img, (left,top))
+    new_image.save('new_teef.png')
+
+def adjust_location(n0, n1):
+    new_n = []
+    for n in n0:
+        new_n.append(n + n1)
+    return new_n
 
 # Not in use but I wrote it out so I'm not deleting it. All lists are in this order.
 teeth_ids = ['1-7', '1-6', '1-5', '1-4', '1-3', '1-2', '1-1', '2-1', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7']
 
 # These are pixel values of the center of each (used) tooth in the image.
 teeth_x_locations = [350, 450, 550, 675, 800, 1030, 1325, 1700, 1995, 2225, 2350, 2475, 2575, 2675]
-teeth_y_location = [1800, 1400, 1075, 800, 550, 375, 275, 275, 375, 550, 800, 1075, 1400, 1800]
+new_teeth_x_locations = adjust_location(teeth_x_locations, 500)
+teeth_y_locations = [1800, 1400, 1075, 800, 550, 375, 275, 275, 375, 550, 800, 1075, 1400, 1800]
+new_teeth_y_locations = adjust_location(teeth_y_locations, 500)
+
 # angle of the tooth, calculated in the helper excel
 tooth_angles = [74, 73, 69, 63, 51, 36, 6, -6, -36, -51, -63, -69, -73, -74]
 # some zeros and ones that are helpful for cartesian components, testing
@@ -120,6 +155,7 @@ m_x = [1.318218459,-6.383277892,-2.204456464,0.563085942,1.251697703,-1.04577282
 # plt.show()
 
 if __name__ == "__main__":
+    #pad_image()
     files = make_plots(zeros, data, data2)
     make_gif(files)
     delete_files(files)
